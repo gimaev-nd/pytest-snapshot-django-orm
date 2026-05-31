@@ -1,0 +1,44 @@
+volumes:
+  db:
+  uv_venv:
+  uv_cache:
+services:
+  app:
+    build:
+      dockerfile_inline: |
+        FROM ghcr.io/astral-sh/uv:alpine
+        ENV UV_LINK_MODE=copy
+        COPY . /app
+        WORKDIR /app/django_app
+        RUN uv sync
+    ports:
+      - "64080:8000"
+    volumes:
+      - ./django_app:/app/django_app:ro
+      - ./pytest-django-capquery:/app/pytest-django-capquery:ro
+      - uv_venv:/app/django_app/.venv
+      - uv_cache:/.cache/uv
+    depends_on:
+      db:
+        condition: service_healthy
+    command: sh -c "uv run manage.py migrate && uv run manage.py runserver"
+
+  db:
+    image: postgres:18.4-bookworm
+    restart: always
+    shm_size: 128mb
+    volumes:
+      - db:/var/lib/postgresql/18/docker
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: example
+      POSTGRES_DB: example
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}" || exit 1'
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
