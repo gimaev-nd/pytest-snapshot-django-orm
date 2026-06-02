@@ -8,4 +8,8 @@ dependencies = [
     "django>=6.0.5",
     "psycopg>=3.3.4",
     "psycopg-binary>=3.3.4",
+    "pytest-django-capquery",
 ]
+
+[tool.uv.sources]
+pytest-django-capquery = { path = "../pytest-django-capquery" }
